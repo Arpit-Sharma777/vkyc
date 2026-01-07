@@ -1,0 +1,40 @@
+# --- Python & System ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.DS_Store
+
+# --- Virtual Environment ---
+.venv
+venv/
+ENV/
+
+# --- Project Specific (IMPORTANT: Protect User Data) ---
+captures/
+data/
+*.db
+*.sqlite3
+*.log
+
+# --- IDE Settings ---
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V-KYC Verification</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background: #f0f2f5;
+            text-align: center;
+            margin: 0;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: white;
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        #video-container {
+            position: relative;
+            margin: 10px auto;
+            width: 100%;
+            aspect-ratio: 4/3;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        video.mirrored {
+            transform: scaleX(-1);
+        }
+
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .status-box {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #e8f0fe;
+            color: #1967d2;
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>V-KYC System</h2>
+        <div id="video-container">
+            <video id="video" autoplay playsinline class="mirrored"></video>
+            <canvas id="overlay"></canvas>
+        </div>
+        <div id="status" class="status-box">Starting Camera...</div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('overlay');
+        const ctx = canvas.getContext('2d');
+        const statusDiv = document.getElementById('status');
+        let intervalId = null;
+        let currentStream = null;
+        let currentMode = "user";
+
+        // REQUEST 4K OR 1080P TO GET SHARPEST TEXT
+        const constraints = {
+            video: {
+                width: { ideal: 3840 },
+                height: { ideal: 2160 },
+                facingMode: "user"
+            }
+        };
+
+        async function startCamera(mode) {
+            if (currentStream) currentStream.getTracks().forEach(track => track.stop());
+
+            const videoConstraints = {
+                width: { ideal: 3840 }, // Try 4K
+                height: { ideal: 2160 }, // Try 4K
+                facingMode: mode === "environment" ? { exact: "environment" } : "user"
+            };
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: videoConstraints });
+                video.srcObject = stream;
+                currentStream = stream;
+                currentMode = mode;
+
+                if (mode === "user") video.classList.add("mirrored");
+                else video.classList.remove("mirrored");
+
+                video.onloadedmetadata = () => {
+                    // Set Canvas to Match Actual Camera Resolution (Crucial for OCR)
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    if (!intervalId) startProcessing();
+                };
+            } catch (err) {
+                if (mode === "environment") startCamera("user");
+                else statusDiv.innerText = "Camera Error: " + err.message;
+            }
+        }
+
+        function drawBox(box) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!box) return;
+
+            ctx.strokeStyle = "#00ff00";
+            ctx.lineWidth = 6; // Thicker line for visibility
+
+            if (currentMode === "user") {
+                ctx.strokeRect(canvas.width - (box[0] + box[2]), box[1], box[2], box[3]);
+            } else {
+                ctx.strokeRect(box[0], box[1], box[2], box[3]);
+            }
+        }
+
+        function startProcessing() {
+            intervalId = setInterval(() => {
+                const sendCanvas = document.createElement('canvas');
+                // Capture at FULL RESOLUTION
+                sendCanvas.width = video.videoWidth;
+                sendCanvas.height = video.videoHeight;
+                const sCtx = sendCanvas.getContext('2d');
+                sCtx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+
+                // SEND AS PNG (Lossless) - Slower but sharper text
+                const dataURL = sendCanvas.toDataURL('image/png');
+
+                fetch('/process_frame', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: dataURL })
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        statusDiv.innerText = data.message;
+
+                        if (data.action === "switch_to_back_camera") {
+                            if (currentMode !== "environment") startCamera("environment");
+                        }
+
+                        drawBox(data.box);
+
+                        if (data.action === "stop") {
+                            clearInterval(intervalId);
+                            statusDiv.style.background = "#e6f4ea";
+                            statusDiv.style.color = "#137333";
+                            statusDiv.innerText = "Verification Complete!";
+                        }
+                    })
+                    .catch(err => console.error(err));
+            }, 500); // Slower interval (500ms) to allow focus
+        }
+
+        startCamera("user");
+    </script>
+</body>
+
+</html>
