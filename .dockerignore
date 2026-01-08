@@ -1,0 +1,19 @@
+# Ignore virtual environments
+.venv
+venv
+ENV
+env
+
+# Ignore git history
+.git
+.gitignore
+
+# Ignore compiled python files
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+
+# Ignore local user data
+.DS_Store
+Thumbs.db
