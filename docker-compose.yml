@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  ui:
+    # Point this to the exact location of your vkyc-ui folder
+    build: 
+      context: "D:/vkyc-ui"
+      dockerfile: Dockerfile
+    container_name: vkyc_ui_container
+    ports:
+      - "5000:5000"
+    volumes:
+      - "D:/vkyc-ui/uploads:/app/uploads"
+
+  ai:
+    # Point this to the exact location of your vkyc folder
+    build: 
+      context: "D:/vkyc"
+      dockerfile: Dockerfile
+    container_name: vkyc_ai_container
+    ports:
+      - "5001:5001"
