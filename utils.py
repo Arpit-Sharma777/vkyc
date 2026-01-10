@@ -8,14 +8,16 @@ import numpy as np
 from datetime import datetime
 from ultralytics import YOLO
 import ultralytics.nn.tasks
+import ultralytics.nn.modules.conv
 import torch.nn.modules.container
 from deepface import DeepFace
 
 print("Loading AI Models...")
-# Allow the custom DetectionModel + Sequential used in best.pt
+# Allowlist all needed custom classes for YOLO checkpoint
 torch.serialization.add_safe_globals([
-    ultralytics.nn.tasks.DetectionModel,
-    torch.nn.modules.container.Sequential
+    ultralytics.nn.tasks.DetectionModel,   # main YOLO model
+    torch.nn.modules.container.Sequential, # common container
+    ultralytics.nn.modules.conv.Conv       # convolution layer used in YOLO
 ])
 model = YOLO('best.pt') 
 reader = easyocr.Reader(['en'], gpu=False)
