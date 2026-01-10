@@ -8,11 +8,15 @@ import numpy as np
 from datetime import datetime
 from ultralytics import YOLO
 import ultralytics.nn.tasks
+import torch.nn.modules.container
 from deepface import DeepFace
 
 print("Loading AI Models...")
-# Add DetectionModel to PyTorch safe globals (trusted checkpoint)
-torch.serialization.add_safe_globals([ultralytics.nn.tasks.DetectionModel])
+# Allow the custom DetectionModel + Sequential used in best.pt
+torch.serialization.add_safe_globals([
+    ultralytics.nn.tasks.DetectionModel,
+    torch.nn.modules.container.Sequential
+])
 model = YOLO('best.pt') 
 reader = easyocr.Reader(['en'], gpu=False)
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
