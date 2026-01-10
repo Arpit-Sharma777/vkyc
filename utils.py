@@ -12,7 +12,7 @@ from deepface import DeepFace
 
 print("Loading AI Models...")
 # The corrected code:
-model = YOLO("best.pt"))
+model = YOLO("best.pt")
 
 reader = easyocr.Reader(['en'], gpu=False)
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
