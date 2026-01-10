@@ -8,9 +8,8 @@ import numpy as np
 from datetime import datetime
 from ultralytics import YOLO
 from ultralytics.nn import modules, tasks
-from ultralytics.nn.modules.block import C2f
-from ultralytics.nn.modules.conv import Conv
-from ultralytics.nn.modules.common import Bottleneck
+from ultralytics.nn.modules.block import C2f, Bottleneck, Conv
+
 import torch.nn as nn
 from deepface import DeepFace
 
