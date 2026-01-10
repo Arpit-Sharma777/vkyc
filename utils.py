@@ -7,42 +7,14 @@ import torch
 import numpy as np
 from datetime import datetime
 from ultralytics import YOLO
-from ultralytics.nn import modules, tasks
-from ultralytics.nn.modules.conv import Concat, Conv
-from ultralytics.nn.modules.block import C2f, Bottleneck, SPPF
-
 import torch.nn as nn
 from deepface import DeepFace
 
 print("Loading AI Models...")
-# --- FULL ALLOWLIST FOR YOLO CHECKPOINT ---
-from torch.serialization import add_safe_globals
-# Allowlist YOLO custom layers
-torch.serialization.add_safe_globals([C2f, Conv, Bottleneck, SPPF, Concat])
-# Add safe globals for YOLO loading
-torch.serialization.add_safe_globals([
-    nn.Sequential,
-    nn.Conv2d,
-    nn.BatchNorm2d,
-    nn.Linear,
-    nn.ReLU,
-    nn.SiLU,
-    nn.Sigmoid,
-    nn.MaxPool2d,
-    nn.ModuleList,
-    nn.AdaptiveAvgPool2d,
-    nn.Flatten,
-    nn.Identity,
-    nn.Upsample,
-])
+# Direct full load
+model = YOLO('best.pt')
+model.model, _ = model._load('best.pt', task=model.task, weights_only=False)
 
-# Also YOLO internals
-torch.serialization.add_safe_globals([
-    tasks.DetectionModel,
-    modules.conv.Conv,
-])
-
-model = YOLO('best.pt') 
 reader = easyocr.Reader(['en'], gpu=False)
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 
