@@ -8,7 +8,8 @@ import numpy as np
 from datetime import datetime
 from ultralytics import YOLO
 from ultralytics.nn import modules, tasks
-from ultralytics.nn.modules.block import C2f, Bottleneck, Conv, SPPF
+from ultralytics.nn.modules.conv import Concat, Conv
+from ultralytics.nn.modules.block import C2f, Bottleneck, SPPF
 
 import torch.nn as nn
 from deepface import DeepFace
@@ -17,7 +18,7 @@ print("Loading AI Models...")
 # --- FULL ALLOWLIST FOR YOLO CHECKPOINT ---
 from torch.serialization import add_safe_globals
 # Allowlist YOLO custom layers
-torch.serialization.add_safe_globals([C2f, Conv, Bottleneck,SPPF])
+torch.serialization.add_safe_globals([C2f, Conv, Bottleneck, SPPF, Concat])
 # Add safe globals for YOLO loading
 torch.serialization.add_safe_globals([
     nn.Sequential,
@@ -32,7 +33,7 @@ torch.serialization.add_safe_globals([
     nn.AdaptiveAvgPool2d,
     nn.Flatten,
     nn.Identity,
-    nn.Upsample
+    nn.Upsample,
 ])
 
 # Also YOLO internals
