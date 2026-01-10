@@ -7,7 +7,7 @@ import torch
 import numpy as np
 from datetime import datetime
 from ultralytics import YOLO
-from ultralytics.nn import tasks
+from ultralytics.nn import modules, tasks
 import torch.nn as nn
 from deepface import DeepFace
 
@@ -17,7 +17,8 @@ from torch.serialization import add_safe_globals
 
 # Add safe globals for YOLO loading
 torch.serialization.add_safe_globals([
-    tasks.DetectionModel,  # YOLO model class
+    tasks.DetectionModel,
+    modules.conv.Conv,
     nn.Sequential,
     nn.Conv2d,
     nn.BatchNorm2d,
