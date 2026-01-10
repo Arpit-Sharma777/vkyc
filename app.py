@@ -26,13 +26,27 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-#UPDATE THIS LINE
-# Explicitly allow all origins, methods, and specific headers like X-API-KEY
+# 1. BROADER CORS CONFIGURATION
+# This tells the browser that any origin (*) is allowed and explicitly lists your custom header
 CORS(app, resources={r"/*": {
     "origins": "*",
     "methods": ["GET", "POST", "OPTIONS"],
-    "allow_headers": ["Content-Type", "X-API-KEY", "Authorization"]
+    "allow_headers": ["Content-Type", "X-API-KEY", "Authorization"],
+    "expose_headers": ["Content-Type", "X-API-KEY"],
+    "supports_credentials": True
 }})
+
+# 2. MANUAL OPTIONS HANDLER (CRITICAL FOR PRODUCTION)
+# Production browsers send an 'OPTIONS' request before the real POST. 
+# If the backend doesn't return a 200 OK for OPTIONS, the POST is blocked.
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        res = jsonify({"status": "ok"})
+        res.headers.add("Access-Control-Allow-Origin", "*")
+        res.headers.add("Access-Control-Allow-Headers", "Content-Type,X-API-KEY")
+        res.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+        return res
 create_directories()
 
 # --- CONFIGURATION ---
