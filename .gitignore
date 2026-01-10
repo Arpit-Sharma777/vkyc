@@ -28,11 +28,7 @@ venv/
 ENV/
 
 # --- Project Specific (IMPORTANT: Protect User Data) ---
-captures/
-data/
-*.db
-*.sqlite3
-*.log
+
 
 # --- IDE Settings ---
 .vscode/

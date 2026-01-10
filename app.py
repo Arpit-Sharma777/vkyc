@@ -6,11 +6,24 @@ import os
 import signal
 import threading
 import uuid
+import logging
 from functools import wraps
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS
 
 from utils import create_directories, save_capture, extract_id_data, save_to_json, verify_faces
+
+# --- LOGGING CONFIGURATION ---
+# This sets up a log file that appends new logs (mode='a')
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("server_logs.log", mode='a'), # Save to file
+        logging.StreamHandler() # Also print to terminal
+    ]
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)
@@ -30,6 +43,7 @@ def require_api_key(f):
     def decorated(*args, **kwargs):
         if request.headers.get('X-API-KEY') == API_KEY:
             return f(*args, **kwargs)
+        logger.warning("Unauthorized access attempt")    
         return jsonify({"action": "error", "message": "Unauthorized"}), 401
     return decorated
 
@@ -113,6 +127,7 @@ def start_session():
         "liveness_stage": 0, "blink_timer": 0, "camera_switched": False,
         "final_result": None
     }
+    logger.info(f"New Session Started: {session_id}")
     return jsonify({"status": "success", "session_id": session_id})
 
 @app.route('/api/process', methods=['POST'])
@@ -175,6 +190,7 @@ def process_frame():
                 state["step"] = 3; state["transition_start"] = time.time() + 4.0
                 state["camera_switched"] = False
                 response["action"] = "flash"; response["message"] = "Photo Taken!"
+                logger.info(f"Session {sid}: Selfie Captured")
             else: response["message"] = f"Hold Still... {int(countdown)+1}"
         else: state["face_start_time"] = time.time(); response["message"] = "Look at Camera"
 
@@ -228,6 +244,7 @@ def process_frame():
             # INCREASE PATIENCE: Wait 15 frames (~5 seconds) to ensure autofocus
             if state["id_stability"] > 15:
                 state["is_processing"] = True
+                logger.info(f"Session {sid}: Starting ID Processing...")
                 threading.Thread(target=process_backend_async, args=(sid, roi)).start()
 
     sessions[sid] = state
@@ -241,6 +258,7 @@ def process_backend_async(sid, roi):
         extracted = extract_id_data(roi)
         
         if extracted["doc_type"] == "Unknown Document" and not extracted["doc_id_number"]:
+            logger.warning(f"Session {sid}: Extraction Failed (Unknown Doc)")
             state["is_processing"] = False
             state["id_stability"] = 0
             sessions[sid] = state
@@ -255,12 +273,17 @@ def process_backend_async(sid, roi):
             "verification": { "face_match": bool(match), "confidence": float(score) },
             "images": {"face": f_path, "id": i_path}
         }
+
+        # Log successful completion
+        logger.info(f"Session {sid}: SUCCESS. ID: {extracted['doc_id_number']}, Match: {match}")
+
         save_to_json(state["final_result"])
         state["step"] = 4
         sessions[sid] = state
         
     except Exception as e:
         print(f"Backend Error: {e}")
+        logger.error(f"Backend Error for Session {sid}: {e}", exc_info=True)
         if sid in sessions:
             sessions[sid]["is_processing"] = False
             sessions[sid]["id_stability"] = 0

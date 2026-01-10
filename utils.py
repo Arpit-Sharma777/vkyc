@@ -5,11 +5,15 @@ import json
 import re
 import torch
 import numpy as np
+import logging
 from datetime import datetime
 from ultralytics import YOLO
 import torch.nn as nn
 from deepface import DeepFace
 
+# Setup Logger
+logger = logging.getLogger(__name__)
+logger.info("Loading AI Models...")
 print("Loading AI Models...")
 
 # --- PATCH START: Fix for PyTorch 2.6+ Security Error ---
@@ -184,6 +188,7 @@ def run_specific_box_ocr(roi):
 # --- 3. MAIN EXTRACTION ---
 def extract_id_data(image_input):
     print("\n--- Starting Deep Extraction ---")
+    logger.info("--- Starting Deep Extraction ---")
     img = cv2.imread(image_input) if isinstance(image_input, str) else image_input
 
     # 1. Run YOLO
@@ -195,6 +200,7 @@ def extract_id_data(image_input):
     }
     
     yolo_name_raw = ""
+    found_classes = []
 
     # 2. Process YOLO Boxes
     for box in results[0].boxes:
@@ -214,8 +220,11 @@ def extract_id_data(image_input):
             raw_dob = run_specific_box_ocr(roi)
             date_match = re.search(r'\d{1,2}[-/.]\d{1,2}[-/.]\d{3,4}', raw_dob)
             if date_match: data["dob"] = fix_dob_typo(date_match.group())
+    
+    logger.info(f"YOLO Object Detection found: {found_classes}")
 
     if data["id_photo"] is None:
+        logger.info("YOLO missed photo, running OpenCV Face fallback...")
         data["id_photo"] = find_face_on_id_card(img)
 
     # 3. FULL SCAN & MERGE
@@ -223,17 +232,27 @@ def extract_id_data(image_input):
     save_debug_data(processed, "clahe_scan") 
     
     try:
+        logger.info("Running EasyOCR on full card...")
         text_lines = reader.readtext(processed, detail=0)
+
+        logger.info(f"Raw Text Lines Found: {text_lines}")
+        
         full_blob = " ".join(text_lines).upper()
         save_debug_data(img, "extraction_log", "\n".join(text_lines))
 
         # A. ID Number
         if not data["doc_id_number"]:
             data["doc_id_number"] = find_best_aadhaar(full_blob)
-            if data["doc_id_number"]: data["doc_type"] = "Aadhaar Card"
+            if data["doc_id_number"]:
+                logger.info(f"ID Number Pattern Found: {data['doc_id_number']}")
+                data["doc_type"] = "Aadhaar Card"
             else:
                 pan_match = re.search(r'[A-Z]{5}[0-9]{4}[A-Z]', full_blob.replace(" ",""))
-                if pan_match: data["doc_id_number"] = pan_match.group(); data["doc_type"] = "PAN Card"
+                if pan_match:
+                    data["doc_id_number"] = pan_match.group();
+                    data["doc_type"] = "PAN Card"
+                    logger.info(f"PAN Pattern Found: {data['doc_id_number']}")
+
 
         # B. Smart Name Merge Logic
         found_name_fs, found_dob_fs = find_name_and_dob_from_full_text(text_lines)
@@ -245,9 +264,11 @@ def extract_id_data(image_input):
         # 1. Prefer Full Scan if it looks longer/more complete
         if found_name_fs and len(found_name_fs) > len(clean_yolo):
             final_name = found_name_fs
+            logger.info(f"Selected Full-Scan Name: {final_name}")
         # 2. Else use YOLO name if valid
         elif len(clean_yolo) > 3:
             final_name = clean_yolo
+            logger.info(f"Selected YOLO Box Name: {final_name}")
         # 3. Fallback to whatever Full Scan found
         elif found_name_fs:
             final_name = found_name_fs
@@ -260,10 +281,13 @@ def extract_id_data(image_input):
         # C. DOB Merge
         if not data["dob"] and found_dob_fs:
             data["dob"] = found_dob_fs
+            logger.info(f"DOB Found via Full Scan: {found_dob_fs}")
 
         data["raw_ocr"] = full_blob
+        logger.info(f"Extracted Data: Name={data.get('first_name')}, ID={data.get('doc_id_number')}")
 
     except Exception as e:
+        logger.error(f"Extraction Error: {e}", exc_info=True)
         print(f"Extraction Error: {e}")
 
     return data
