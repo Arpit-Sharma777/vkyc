@@ -20,8 +20,6 @@ from torch.serialization import add_safe_globals
 torch.serialization.add_safe_globals([C2f, Conv, Bottleneck,SPPF])
 # Add safe globals for YOLO loading
 torch.serialization.add_safe_globals([
-    tasks.DetectionModel,
-    modules.conv.Conv,
     nn.Sequential,
     nn.Conv2d,
     nn.BatchNorm2d,
@@ -29,7 +27,11 @@ torch.serialization.add_safe_globals([
     nn.ReLU,
     nn.SiLU,
     nn.Sigmoid,
+    nn.MaxPool2d,
     nn.ModuleList,
+    nn.AdaptiveAvgPool2d,
+    nn.Flatten,
+    nn.Identity,
 ])
 
 # Also YOLO internals
