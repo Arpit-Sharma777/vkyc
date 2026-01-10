@@ -29,7 +29,15 @@ torch.serialization.add_safe_globals([
     nn.ReLU,
     nn.SiLU,
     nn.Sigmoid,
+    nn.ModuleList,
 ])
+
+# Also YOLO internals
+torch.serialization.add_safe_globals([
+    tasks.DetectionModel,
+    modules.conv.Conv,
+])
+
 model = YOLO('best.pt') 
 reader = easyocr.Reader(['en'], gpu=False)
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
