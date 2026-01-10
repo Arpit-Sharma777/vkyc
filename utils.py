@@ -10,8 +10,30 @@ from ultralytics import YOLO
 from deepface import DeepFace
 
 print("Loading AI Models...")
-# Disable PyTorch safe unpickling checks
-torch.serialization.safe_globals_context = None  # disable allowlist checks
+# --- FULL ALLOWLIST FOR YOLO CHECKPOINT ---
+from torch.serialization import add_safe_globals
+
+# Add all known globals that YOLO weights might require
+add_safe_globals([
+    'DetectionModel',
+    'Conv',
+    'Bottleneck',
+    'Concat',
+    'SPPF',
+    'SPPCSPC',
+    'Focus',
+    'DWConv',
+    'C3',
+    'CBL',
+    'ConvBNAct',
+    'torch.nn.modules.container.Sequential',
+    'torch.nn.modules.conv.Conv2d',
+    'torch.nn.modules.batchnorm.BatchNorm2d',
+    'torch.nn.modules.linear.Linear',
+    'torch.nn.modules.activation.ReLU',
+    'torch.nn.modules.activation.SiLU',
+    'torch.nn.modules.activation.Sigmoid',
+])
 model = YOLO('best.pt') 
 reader = easyocr.Reader(['en'], gpu=False)
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
