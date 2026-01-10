@@ -26,7 +26,13 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-CORS(app)
+#UPDATE THIS LINE
+# Explicitly allow all origins, methods, and specific headers like X-API-KEY
+CORS(app, resources={r"/*": {
+    "origins": "*",
+    "methods": ["GET", "POST", "OPTIONS"],
+    "allow_headers": ["Content-Type", "X-API-KEY", "Authorization"]
+}})
 create_directories()
 
 # --- CONFIGURATION ---
