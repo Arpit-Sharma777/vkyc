@@ -26,27 +26,31 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
-# 1. BROADER CORS CONFIGURATION
-# This tells the browser that any origin (*) is allowed and explicitly lists your custom header
-CORS(app, resources={r"/*": {
-    "origins": "*",
-    "methods": ["GET", "POST", "OPTIONS"],
-    "allow_headers": ["Content-Type", "X-API-KEY", "Authorization"],
-    "expose_headers": ["Content-Type", "X-API-KEY"],
-    "supports_credentials": True
-}})
+CORS(app) # Keep simple CORS for basic checks
 
-# 2. MANUAL OPTIONS HANDLER (CRITICAL FOR PRODUCTION)
-# Production browsers send an 'OPTIONS' request before the real POST. 
-# If the backend doesn't return a 200 OK for OPTIONS, the POST is blocked.
-@app.before_request
-def handle_preflight():
-    if request.method == "OPTIONS":
-        res = jsonify({"status": "ok"})
-        res.headers.add("Access-Control-Allow-Origin", "*")
-        res.headers.add("Access-Control-Allow-Headers", "Content-Type,X-API-KEY")
-        res.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        return res
+# --- NUCLEAR CORS FIX: FORCE HEADERS ON EVERYTHING ---
+@app.after_request
+def add_cors_headers(response):
+    # Allow requests from your specific UI domain
+    response.headers['Access-Control-Allow-Origin'] = 'https://vkyc.techverves.biz'
+    
+    # Allow credentials if you ever need cookies (optional)
+    response.headers['Access-Control-Allow-Credentials'] = 'true'
+    
+    # Allow the specific headers you use
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, X-API-KEY, Authorization'
+    
+    # Allow methods
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS, PUT, DELETE'
+    
+    return response
+
+# --- HANDLE PREFLIGHT REQUESTS MANUALLY ---
+# This catches the specific "OPTIONS" request that browsers send first
+@app.route('/<path:path>', methods=['OPTIONS'])
+def handle_options(path):
+    return jsonify({'status': 'ok'}), 200
+
 create_directories()
 
 # --- CONFIGURATION ---
