@@ -11,10 +11,8 @@ import torch.nn as nn
 from deepface import DeepFace
 
 print("Loading AI Models...")
-# fully load the checkpoint (bypassing weights_only)
-ckpt = torch.load("best.pt", map_location="cpu", weights_only=False)
-# pass the checkpoint directly to YOLO
-model = YOLO(ckpt)
+# The corrected code:
+model = YOLO("best.pt"))
 
 reader = easyocr.Reader(['en'], gpu=False)
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
