@@ -7,32 +7,33 @@ import torch
 import numpy as np
 from datetime import datetime
 from ultralytics import YOLO
+from ultralytics.nn import tasks, modules
 from deepface import DeepFace
 
 print("Loading AI Models...")
 # --- FULL ALLOWLIST FOR YOLO CHECKPOINT ---
 from torch.serialization import add_safe_globals
 
-# Add all known globals that YOLO weights might require
-add_safe_globals([
-    'DetectionModel',
-    'Conv',
-    'Bottleneck',
-    'Concat',
-    'SPPF',
-    'SPPCSPC',
-    'Focus',
-    'DWConv',
-    'C3',
-    'CBL',
-    'ConvBNAct',
-    'torch.nn.modules.container.Sequential',
-    'torch.nn.modules.conv.Conv2d',
-    'torch.nn.modules.batchnorm.BatchNorm2d',
-    'torch.nn.modules.linear.Linear',
-    'torch.nn.modules.activation.ReLU',
-    'torch.nn.modules.activation.SiLU',
-    'torch.nn.modules.activation.Sigmoid',
+# --- ALLOWLIST YOLO GLOBALS ---
+torch.serialization.add_safe_globals([
+    tasks.DetectionModel,
+    modules.conv.Conv,
+    modules.common.Bottleneck,
+    modules.common.Concat,
+    modules.common.SPPF,
+    modules.common.SPP,
+    modules.common.Focus,
+    modules.common.DWConv,
+    modules.common.C3,
+    modules.common.CBL,
+    modules.common.ConvBNAct,
+    torch.nn.Sequential,
+    torch.nn.Conv2d,
+    torch.nn.BatchNorm2d,
+    torch.nn.Linear,
+    torch.nn.ReLU,
+    torch.nn.SiLU,
+    torch.nn.Sigmoid,
 ])
 model = YOLO('best.pt') 
 reader = easyocr.Reader(['en'], gpu=False)
