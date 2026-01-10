@@ -32,6 +32,7 @@ torch.serialization.add_safe_globals([
     nn.AdaptiveAvgPool2d,
     nn.Flatten,
     nn.Identity,
+    nn.Upsample
 ])
 
 # Also YOLO internals
