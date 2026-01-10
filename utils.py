@@ -11,6 +11,16 @@ import torch.nn as nn
 from deepface import DeepFace
 
 print("Loading AI Models...")
+
+# --- PATCH START: Fix for PyTorch 2.6+ Security Error ---
+# This forces torch.load to allow the YOLO model classes
+_original_load = torch.load
+def patched_load(*args, **kwargs):
+    if 'weights_only' not in kwargs:
+        kwargs['weights_only'] = False
+    return _original_load(*args, **kwargs)
+torch.load = patched_load
+# --- PATCH END ---
 # The corrected code:
 model = YOLO("best.pt")
 
