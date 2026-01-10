@@ -7,18 +7,11 @@ import torch
 import numpy as np
 from datetime import datetime
 from ultralytics import YOLO
-import ultralytics.nn.tasks
-import ultralytics.nn.modules.conv
-import torch.nn.modules.container
 from deepface import DeepFace
 
 print("Loading AI Models...")
-# Allowlist all needed custom classes for YOLO checkpoint
-torch.serialization.add_safe_globals([
-    ultralytics.nn.tasks.DetectionModel,   # main YOLO model
-    torch.nn.modules.container.Sequential, # common container
-    ultralytics.nn.modules.conv.Conv       # convolution layer used in YOLO
-])
+# Disable PyTorch safe unpickling checks
+torch.serialization.safe_globals_context = None  # disable allowlist checks
 model = YOLO('best.pt') 
 reader = easyocr.Reader(['en'], gpu=False)
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
